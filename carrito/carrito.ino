@@ -48,7 +48,26 @@ void loop() {
 
     String request = client.readStringUntil('\r');
 
-    // Contenido Pagina Web
+    if (request.indexOf("/manual") != -1) {
+
+      int ix = request.indexOf("x=");
+      int iy = request.indexOf("y=");
+      int iv = request.indexOf("v=");
+
+      if (ix != -1 && iy != -1 && iv != -1) {
+        x = request.substring(ix + 2, request.indexOf("&", ix)).toInt();
+        y = request.substring(iy + 2, request.indexOf("&", iy)).toInt();
+        v = request.substring(iv + 2).toInt();
+
+        manual(x, y, v);
+      }
+    }
+
+    if (request.indexOf("/automatico") != -1) {
+      automatico();
+    }
+
+    // Contenido de la pagina web
     client.println(R"rawliteral(<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -119,15 +138,14 @@ const divModo = document.getElementById("div-modo");
 let eventosAgregados = false;
 
 // BOTON AUTOMATICO
-const btnAutomatico = document.g
-etElementById("btn-automatico");
+const btnAutomatico = document.getElementById("btn-automatico");
 
 btnAutomatico.addEventListener("click", () => {
 
     divModo.innerHTML = "";
     divModo.innerHTML = `<h2 class="text-center" style="color: #280561">MODO AUTOMÁTICO</h2>`;
 
-    fetch("/modo2");
+    fetch("/automatico");
 })
 
 // BOTON MANUAL Y JOYSTICK
@@ -295,7 +313,7 @@ function dibujar(event) {
         console.log(ahora);
 
         if (ahora - ultimoEnvio > 100) {
-            fetch(`/modo1?x=${relativo_x}&y=${relativo_y}&v=${velocidad}`);
+            fetch(`/manual?x=${relativo_x}&y=${relativo_y}&v=${velocidad}`);
             ultimoEnvio = ahora;
         }
     }
@@ -304,32 +322,14 @@ function dibujar(event) {
 </html>
 )rawliteral");
 
-  client.stop();
-
-    if (request.indexOf("/manual") != -1) {
-
-      int ix = request.indexOf("x=");
-      int iy = request.indexOf("x=");
-      int iv = request.indexOf("x=");
-
-      if (ix != -1 && iy != -1 && iv != -1) {
-        x = request.substring(ix + 2, request.indexOf("&", ix)).toInt();
-        y = request.substring(iy + 2, request.indexOf("&", iy)).toInt();
-        v = request.substring(iv + 2).toInt();
-
-        delay(50);
-
-        manual(x, y, v);
-      }
-    }
-
-    if (request.indexOf("/automatico") != -1) {
-      automatico();
-    }
+    client.stop();
   }
 }
 
 // Funciones
-
-manual(x, y, v); // *EN PROCESO*
-automatico(); // *EN PROCESO*
+void manual(int x, int y, int v) {
+    // *EN PROCESO*
+}
+void automatico() {
+    // *EN PROCESO*
+}
