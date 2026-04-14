@@ -72,19 +72,27 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(mensaje);
   Serial.println(topic);
 
+  if (String(topic) == "carrito/claxon") {
+    claxon();
+  }
+
+  if (String(topic) == "carrito/automatico") {
+    automatico();
+  }
+
   if (String(topic) == "carrito/manual") {
     int x, y, v;
     sscanf(mensaje.c_str(), "%d,%d,%d", &x, &y, &v);
 
     manual(x, y, v);
   }
-
-  if (String(topic) == "carrito/automatico") {
-    automatico();
-  }
 }
 
 // Funciones funcionamiento
+void claxon() {
+  Serial.println("Tocaron el claxon");
+}
+
 void automatico() {
   Serial.println("Modo automático");
 }
