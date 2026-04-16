@@ -71,10 +71,11 @@
 
     client.on("connect", () => {
         console.log("Conectado a MQTT");
-    });
 
-    client.on("error", (err) => {
-        console.log("Error: ", err);
+        client.subscribe("pcse/carrito/#");
+    });
+    client.on("message", (topic, message) => {
+        console.log("RECIBIDO:", topic, message.toString());
     });
 </script>
 <script>
@@ -86,7 +87,7 @@ const btnClaxon = document.getElementById("btn-claxon")
 
 btnClaxon.addEventListener("click", () => {
     if (client.connected) {
-        client.publish("carrito/claxon");
+        client.publish("pcse/carrito/claxon", "Tocaron el claxon");
     }
 })
 
@@ -99,7 +100,7 @@ btnAutomatico.addEventListener("click", () => {
     divModo.innerHTML = `<h2 class="text-center" style="color: #280561">MODO AUTOMÁTICO</h2>`;
 
     if (client.connected) {
-        client.publish("carrito/automatico");
+        client.publish("pcse/carrito/automatico", "modo automatico");
     }
 })
 
@@ -263,13 +264,11 @@ function dibujar(event) {
         if (vel) vel.innerText = velocidad;
         if (ang) ang.innerText = angulo_grados;
 
-        let ahora = Date.now();
-        
-        console.log(ahora);
+        let ahora = Date.now();     
 
         if (ahora - ultimoEnvio > 100) {
             if (client.connected) {
-                client.publish("carrito/manual", `${relativo_x},${relativo_y},${velocidad}`);
+                client.publish("pcse/carrito/manual", `${relativo_x},${relativo_y},${velocidad}`);
             }
             ultimoEnvio = ahora;
         }
