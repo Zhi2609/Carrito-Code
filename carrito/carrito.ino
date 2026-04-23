@@ -75,3 +75,26 @@ void imprimirUbicacionGPS() {
     Serial.println("GPS: Esperando señal de satélites...");
   }
 }
+
+int calcularErrorLinea() {
+  leerSensoresLinea();
+
+  int pesos[8] = {-40, -30, -20, -10, 10, 20, 30, 40};
+  
+  long errorSuma = 0;
+  int sensoresActivos = 0;
+
+  for (int i = 0; i < 8; i++) {
+    if (estadoLinea[i] == 1) {
+      errorSuma += pesos[i];
+      sensoresActivos++;
+    }
+  }
+
+  if (sensoresActivos == 0) {
+    return 999;
+  }
+  int errorFinal = errorSuma / sensoresActivos;
+  
+  return errorFinal;
+}
