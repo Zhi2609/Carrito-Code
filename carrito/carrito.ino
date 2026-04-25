@@ -1,13 +1,20 @@
-// Librerias
+// LIBRERIAS
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include "carrito.h"
 
-// Configuracion WIFI
-const char* ssid = "CARRITO_PLUS5";
+// CLASES
+carrito carro;
+
+
+// CONFIGURACION WIFI
+const char* ssid = "CARRITO5_WIFI";
 const char* password = "12345678";
 
-// Configuracion MQTT
+// CONFIGURACION MQTT
 const char* mqtt_server = "broker.hivemq.com";
+
+// ASIGNACION DE CLIENTES WiFi y MQTT
 WiFiClient espClient;
 PubSubClient client(espClient);
 
@@ -19,18 +26,18 @@ void setup() {
   // Conexion a WIFI
   WiFi.begin(ssid, password);
 
-  Serial.println("Conectando a la red");
+  Serial.print("Conectando a la red: ");
+  Serial.print(ssid);
+  Serial.println("...");
   
   while(WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
     delay(500);
-    Serial.println(WiFi.status());
   }
 
-  Serial.println("¡Conexión exitosa!");
-  Serial.print("IP del ESP32: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("\n¡Conexión exitosa!\n");
 
-  // Creacion del servidor web
+  // Conexion del broker y callback
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
 }
@@ -43,18 +50,17 @@ void loop() {
   client.loop();
 }
 
-// Funciones servidor
+// FUNCIONES BROKER
 void reconnect() {
   while (!client.connected()) {
-    Serial.println("Conectando a MQTT...");
+    Serial.println("Conectando a MQTT...\n");
     
-    if (client.connect("CONTROL_CARRITO")) {
-      Serial.println("Conectado a MQTT");
-      client.subscribe("carrito/#");
+    if (client.connect("CARRITO5")) {
+      Serial.println("¡Conectado a MQTT!\n");
+      client.subscribe("c5/carrito/#");
     } else {
-      Serial.print("Error: ");
-      Serial.println(client.state());
-      delay(2000);
+      Serial.println("Error al conectar el cliente.\n");
+      delay(5000);
     }
   }
 }
@@ -67,36 +73,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
   for (int i = 0; i < length; i++) {
     mensaje += (char)payload[i];
   }
-
+  
   // Seleccion de modo
-  Serial.println(mensaje);
-  Serial.println(topic);
-
-  if (String(topic) == "carrito/claxon") {
-    claxon();
+  if (String(topic) == "c5/carrito/claxon") {
+    carro.claxon();
   }
-
-  if (String(topic) == "carrito/automatico") {
-    automatico();
+  if (String(topic) == "c5/carrito/automatico") {
+    carro.automatico();
   }
-
-  if (String(topic) == "carrito/manual") {
+  if (String(topic) == "c5/carrito/automaticoSeguro") {
+    carro.automaticoSeguro();
+  }
+  if (String(topic) == "c5/carrito/manual") {
     int x, y, v;
     sscanf(mensaje.c_str(), "%d,%d,%d", &x, &y, &v);
 
-    manual(x, y, v);
+    carro.manual(x, y, v);
   }
-}
-
-// Funciones funcionamiento
-void claxon() {
-  Serial.println("Tocaron el claxon");
-}
-
-void automatico() {
-  Serial.println("Modo automático");
-}
-
-int manual(int x, int y, int v) {
-  Serial.printf("Manual: x=%d y=%d v=%d\n", x, y, v);
+  if (String(topic) == "c5/carrito/gps") {
+    carro.gps();
+  }
 }

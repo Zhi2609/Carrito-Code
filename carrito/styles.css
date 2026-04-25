@@ -1,0 +1,25 @@
+#btn-claxon {
+   border-radius: 100%;
+}
+.title {
+    border-image: linear-gradient(to right, #6610f2, #c099ff) 1;
+}
+.btn {
+    background-color: #6610f2;
+    color: #06010f;
+    font-family: 'Arial Rounded MT', Helvetica, sans-serif;
+}
+.btn:hover {
+    background-color: #06010f;
+}
+body {
+    background-color: #06010f;
+}
+h1 {
+    font-family: 'Arial Rounded MT', Helvetica, sans-serif;
+    color: #6610f2;
+}
+p {
+    color: #280561;
+    font-family: 'Arial Rounded MT', Helvetica, sans-serif;
+}
