@@ -3,10 +3,6 @@
 #include <PubSubClient.h>
 #include "carrito.h"
 
-// CLASES
-carrito carro;
-
-
 // CONFIGURACION WIFI
 const char* ssid = "CARRITO5_WIFI";
 const char* password = "12345678";
@@ -67,7 +63,7 @@ void reconnect() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
 
-  // Procesamiento del callback *NO MOVER*
+  // Procesamiento del callback ¡NO MOVER!
   String mensaje = "";
 
   for (int i = 0; i < length; i++) {
@@ -76,21 +72,21 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
   // Seleccion de modo
   if (String(topic) == "c5/carrito/claxon") {
-    carro.claxon();
+    carrito.claxon();
   }
   if (String(topic) == "c5/carrito/automatico") {
-    carro.automatico();
+    carrito.automatico();
   }
   if (String(topic) == "c5/carrito/automaticoSeguro") {
-    carro.automaticoSeguro();
+    carrito.automaticoSeguro();
   }
   if (String(topic) == "c5/carrito/manual") {
     int x, y, v;
     sscanf(mensaje.c_str(), "%d,%d,%d", &x, &y, &v);
 
-    carro.manual(x, y, v);
+    carrito.manual(x, y, v);
   }
   if (String(topic) == "c5/carrito/gps") {
-    carro.gps();
+    carrito.gps();
   }
 }
