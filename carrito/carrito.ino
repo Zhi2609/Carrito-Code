@@ -2,6 +2,14 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include "carrito.h"
+#include "sensores.h"
+#include "motores.h"
+#include "antichoques.h"
+
+carrito carro;
+sensores s;
+motores m;
+antichoques ac;
 
 // CONFIGURACION WIFI
 const char* ssid = "CARRITO5_WIFI";
@@ -13,6 +21,10 @@ const char* mqtt_server = "broker.hivemq.com";
 // ASIGNACION DE CLIENTES WiFi y MQTT
 WiFiClient espClient;
 PubSubClient client(espClient);
+
+// VARIABLES
+String modo;
+int x, y, v;
 
 // SETUP
 void setup() {
@@ -36,27 +48,47 @@ void setup() {
   // Conexion del broker y callback
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
+
+  // Configuracion de componentes
+  s.confSensores();
+  m.confMotores();
+  ac.confAntichoques();
 }
 
 // LOOP
 void loop() {
+  // cliente
   if (!client.connected()) {
     reconnect();
   }
   client.loop();
+
+  // modo del carrito
+  if (modo == "automatico") {
+    carro.automatico();
+  }
+  if (modo == "automaticoSeguro") {
+    carro.automaticoSeguro();
+  }
+  if (modo == "manual") {
+    carro.manual(x, y, v);
+  }
+  if (modo == "gps") {
+    carro.gps();
+  }
+  delay(50);
 }
 
 // FUNCIONES BROKER
 void reconnect() {
-  while (!client.connected()) {
-    Serial.println("Conectando a MQTT...\n");
+  if (!client.connected()) {
+    Serial.println("Conectando a MQTT...");
     
     if (client.connect("CARRITO5")) {
-      Serial.println("¡Conectado a MQTT!\n");
+      Serial.println("¡Conectado a MQTT!");
       client.subscribe("c5/carrito/#");
     } else {
-      Serial.println("Error al conectar el cliente.\n");
-      delay(5000);
+      Serial.println("Error al conectar el cliente.");
     }
   }
 }
@@ -72,21 +104,23 @@ void callback(char* topic, byte* payload, unsigned int length) {
   
   // Seleccion de modo
   if (String(topic) == "c5/carrito/claxon") {
-    carrito.claxon();
+    carro.claxon();
   }
   if (String(topic) == "c5/carrito/automatico") {
-    carrito.automatico();
+    Serial.println("\nModo: automatico");
+    modo = "automatico";
   }
   if (String(topic) == "c5/carrito/automaticoSeguro") {
-    carrito.automaticoSeguro();
+    Serial.println("\nModo: automatico seguro");
+    modo = "automaticoSeguro";
   }
   if (String(topic) == "c5/carrito/manual") {
-    int x, y, v;
+    Serial.println("\nModo: manual");
     sscanf(mensaje.c_str(), "%d,%d,%d", &x, &y, &v);
-
-    carrito.manual(x, y, v);
+    modo = "manual";
   }
   if (String(topic) == "c5/carrito/gps") {
-    carrito.gps();
+    Serial.println("\nModo: gps");
+    modo = "gps";
   }
 }
