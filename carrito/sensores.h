@@ -31,7 +31,7 @@ long sensores::errorSensores(void) {
   int sensoresActivos = 0;
 
   for (int i = 0; i < 8; i++) {
-    if (digitalRead(pinesIR[i]) == 1) { // CAMBIAR VALOR?
+    if (digitalRead(pinesIR[i]) == 1) {
       errorSuma += pesos[i];
       sensoresActivos++;
     }
