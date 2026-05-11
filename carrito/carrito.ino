@@ -57,6 +57,7 @@ void setup() {
   // Configuracion de componentes
   s.confSensores();
   m.confMotores();
+  m.detenerMotores();
   ac.confAntichoques();
   c.confClaxon();
   l.confLuces();
@@ -71,39 +72,39 @@ void loop() {
   client.loop();
 
   // Funcionalidades extra
-  if (extra == "") {
-    carro.apagarLuces();
-  } else if(extra == "claxon") {
-    carro.claxon();
-    carro.actualizarClaxon();
-    extra = "";
-  } else if (extra == "lucesIzq") {
-    carro.direccionales(izquierda);
-    carro.actualizarLuces();
-    extra = "";
-  } else if (extra == "lucesDer") {
-    carro.direccionales(izquierda);
-    carro.actualizarLuces();
-    extra = "";
-  } else if (extra == "lucesPrev") {
-    carro.preventivas();
-    carro.actualizarLuces();
-    extra = "";
-  }
+  // if (extra == "") {
+  //   carro.apagarLuces();
+  // } else if(extra == "claxon") {
+  //   carro.claxon();
+  //   carro.actualizarClaxon();
+  //   extra = "";
+  // } else if (extra == "lucesIzq") {
+  //   carro.direccionales(izquierda);
+  //   carro.actualizarLuces();
+  //   extra = "";
+  // } else if (extra == "lucesDer") {
+  //   carro.direccionales(izquierda);
+  //   carro.actualizarLuces();
+  //   extra = "";
+  // } else if (extra == "lucesPrev") {
+  //   carro.preventivas();
+  //   carro.actualizarLuces();
+  //   extra = "";
+  // }
 
   // Modo del carrito
-  if (modo == "automatico") {
-    carro.automatico();
-  }
-  if (modo == "antichoques") {
-    carro.antichoques();
-  }
+  // if (modo == "automatico") {
+  //   carro.automatico();
+  // }
+  // if (modo == "antichoques") {
+  //   carro.antichoques();
+  // }
   if (modo == "manual") {
     carro.manual(x, y, v);
   }
-  if (modo == "gps") {
-    carro.gps();
-  }
+  // if (modo == "gps") {
+  //   carro.gps();
+  // }
   delay(150);
 }
 
