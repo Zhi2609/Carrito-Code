@@ -1,23 +1,29 @@
 #ifndef CLAXON_H
 #define CLAXON_H
-
-#define buzzer 8;
-
+ 
+#include <Arduino.h>
+ 
+// ============================================================
+//  CLAXON — Buzzer pasivo
+// ============================================================
+ 
+#define BUZZER_PIN 23
+ 
 class claxon {
-    public:
-        void confClaxon(void);
-        void activar(void);
-        void desactivar(void);
+  public:
+    void confClaxon() {
+      pinMode(BUZZER_PIN, OUTPUT);
+      digitalWrite(BUZZER_PIN, LOW);
+      Serial.println("✓ Claxon configurado");
+    }
+ 
+    void activar() {
+      tone(BUZZER_PIN, 400);
+    }
+ 
+    void desactivar() {
+      noTone(BUZZER_PIN);
+    }
 };
-
-void claxon::confClaxon(void) {
-    pinMode(buzzer, OUTPUT);
-}
-void claxon::activar(void) {
-    tone(buzzer, 400);
-}
-void claxon::desactivar(void) {
-    noTone(buzzer);
-}
-
+ 
 #endif
