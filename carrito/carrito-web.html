@@ -241,6 +241,10 @@ function pararDibujo() {
     if (cy) cy.innerText = 0;
     if (vel) vel.innerText = 0;
     if (ang) ang.innerText = 0;
+
+    if (client.connected) {
+    client.publish("c5/carrito/manual", "Modo: manual | Direcciones: 0,0,0");
+    }
 }
 
 function dibujar(event) {
