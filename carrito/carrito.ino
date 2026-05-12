@@ -24,9 +24,10 @@ WiFiClient   espClient;
 PubSubClient client(espClient);
 
 // ----------- VARIABLES -----------
-String modo  = "stop";
+String modo  = "";
 String extra = "";
 int x = 0, y = 0, v = 0;
+float lat, lon;
 
 // ----------- TIMERS -----------
 unsigned long ultimoIntento = 0;
@@ -169,7 +170,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if (t == "c5/carrito/manual") {
     modo = "manual";
-    // ✅ Parsear correctamente "Modo: manual | Direcciones: x,y,v"
+    // Parsear correctamente "Modo: manual | Direcciones: x,y,v"
     int idx = mensaje.indexOf("Direcciones: ");
     if (idx != -1) {
       String coords = mensaje.substring(idx + 13);
@@ -184,7 +185,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if (t == "c5/carrito/gps") {
     modo = "gps";
-    Serial.println("→ Modo: GPS");
+
+    sscanf(mensaje.c_str(), "%f,%f", &lat, &lon);
+
+    Serial.println("→ Modo: GPS | ");
+    Serial.print(" altitude=");
+    Serial.print(lat);
+    Serial.print(" longitude=");
+    Serial.println(lon);
   }
 
   // --- Extras ---

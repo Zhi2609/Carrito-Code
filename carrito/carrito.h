@@ -167,8 +167,9 @@ class carrito {
     }
 
     // --- Modo GPS ---
-   // void gps() { 
-    // }
+    void gps() {
+      console.log("xd")
+    }
 };
 
 #endif
