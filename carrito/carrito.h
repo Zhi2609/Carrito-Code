@@ -30,7 +30,17 @@ class carrito {
     bool lucesActivas = false;
 
     // Estado antichoques
-    bool retrocediendo = false;
+    enum EstadoAntichoques {
+      ANTICHOQUES_AVANZAR = 0,
+      ANTICHOQUES_RETROCEDER,
+      ANTICHOQUES_GIRAR
+    };
+
+    EstadoAntichoques estadoAntichoques = ANTICHOQUES_AVANZAR;
+    bool giroDerecha = true;
+    unsigned long tSensor = 0;
+    unsigned long tUltimaDistancia = 0;
+    float distanciaCm = -1.0f;
 
   public:
     // --- Configuración inicial ---
@@ -110,23 +120,69 @@ class carrito {
 
     // --- Modo antichoques ---
     void antichoques() {
-      float distancia = ac.lecturaDistancia();
+      const int VEL_AVANCE   = 120;
+      const int VEL_LENTO    = 80;
+      const int VEL_RETRO    = 110;
+      const int VEL_GIRO     = 110;
 
-      if (distancia > 0 && distancia < 15) {
-        // Obstáculo detectado — retroceder
-        if (!retrocediendo) {
-          tAntichoques  = millis();
-          retrocediendo = true;
-        }
-        m.atras(100);
+      const int UMBRAL_CERCA = 18;
+      const int UMBRAL_LENTO = 30;
 
-        if (millis() - tAntichoques >= 2000) {
-          m.derecha(100);
+      const unsigned long T_RETRO  = 350;
+      const unsigned long T_GIRO   = 450;
+      const unsigned long T_SENSOR = 80;
+
+      if (millis() - tSensor >= T_SENSOR) {
+        float lectura = ac.lecturaDistancia();
+
+        if (lectura > 0) {
+          tUltimaDistancia = millis();
+          if (distanciaCm < 0) distanciaCm = lectura;
+          else distanciaCm = (distanciaCm * 0.7f) + (lectura * 0.3f);
+        } else if (millis() - tUltimaDistancia > 300) {
+          distanciaCm = -1;
         }
-      } else {
-       
-        retrocediendo = false;
-        m.adelante(100);
+
+        tSensor = millis();
+      }
+
+      bool obstaculo = (distanciaCm > 0 && distanciaCm <= UMBRAL_CERCA);
+
+      switch (estadoAntichoques) {
+        case ANTICHOQUES_AVANZAR: {
+          if (obstaculo) {
+            estadoAntichoques = ANTICHOQUES_RETROCEDER;
+            tAntichoques = millis();
+            break;
+          }
+
+          int vel = VEL_AVANCE;
+          if (distanciaCm > 0 && distanciaCm < UMBRAL_LENTO) {
+            vel = map((int)distanciaCm, UMBRAL_CERCA, UMBRAL_LENTO, VEL_LENTO, VEL_AVANCE);
+            vel = constrain(vel, VEL_LENTO, VEL_AVANCE);
+          }
+
+          m.moverDirecto(vel, vel);
+          break;
+        }
+
+        case ANTICHOQUES_RETROCEDER:
+          m.moverDirecto(-VEL_RETRO, -VEL_RETRO);
+          if (millis() - tAntichoques >= T_RETRO) {
+            estadoAntichoques = ANTICHOQUES_GIRAR;
+            tAntichoques = millis();
+            giroDerecha = !giroDerecha;
+          }
+          break;
+
+        case ANTICHOQUES_GIRAR:
+          if (giroDerecha) m.moverDirecto(VEL_GIRO, -VEL_GIRO);
+          else m.moverDirecto(-VEL_GIRO, VEL_GIRO);
+
+          if (millis() - tAntichoques >= T_GIRO) {
+            estadoAntichoques = ANTICHOQUES_AVANZAR;
+          }
+          break;
       }
     }
 
