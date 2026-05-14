@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CARRITO5</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+</head>
+<body class="bg-dark" style="color: #c6ccd2;" scroll="no" style="overflow: hidden;">
+    <header>
+        <div class="text-center">
+            <h1>CARRITO</h1>
+        </div>
+    </header>
+    <main>
+        <div class="card text-center bg-dark text-secondary border-secondary my-2 py-2" style="height: 30rem;">
+            <div class="card-body";>
+                <h5 class="card-title">Modos</h5>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-center m-4">
+                    <button type="button" class="btn btn-outline-secondary" id="btn-manual">Manual</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-automatico">Automatico</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-antichoques">Antichoques</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-gps">GPS</button>
+                </div>
+                <div id="div-modo"></div>
+            </div>
+        </div>
+        <div id="div-extra" class="d-grid gap-2 d-md-flex justify-content-md-center"></div>
+    </main>
+</body>
+
+<!--MQTT-->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+<script>
+    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
+
+    client.on("connect", () => {
+        console.log("¡Conectado a MQTT!");
+        client.subscribe("c5/carrito/#");
+    });
+    client.on("message", (topic, message) => {
+        console.log("Recibido de MQTT:", topic, " --> " + message.toString());
+    });
+</script>
+
+<!--FUNCIONALIDADES-->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+const divModo = document.getElementById("div-modo");
+const divExtra = document.getElementById("div-extra");
+let eventosAgregados = false;
+
+// LUCES - LEDS
+function luces() {
+
+    const btnIzq = document.getElementById("btn-izq");
+    const btnPrev = document.getElementById("btn-prev");
+    const btnDer = document.getElementById("btn-der");
+    const btnApagarLuces = document.getElementById("btn-apagar-luces");
+
+    btnIzq.addEventListener("click", () => {
+        if (client.connected) {
+            client.publish("c5/carrito/lucesIzq", "Direccional izquierda activada");
+        }
+    })
+    btnPrev.addEventListener("click", () => {
+        if (client.connected) {
+            client.publish("c5/carrito/lucesPrev", "Luces preventivas activadas");
+        }
+    })
+    btnDer.addEventListener("click", () => {
+        if (client.connected) {
+            client.publish("c5/carrito/lucesDer", "Direccional derecha activada");
+        }
+    })
+    btnApagarLuces.addEventListener("click", () => {
+        if (client.connected) {
+            client.publish("c5/carrito/lucesApagar", "Se apagaron las luces");
+        }
+    })
+}
+// CLAXON
+function claxon() {  
+    const btnClaxon = document.getElementById("btn-claxon");
+
+    btnClaxon.addEventListener("click", () => {
+        if (client.connected) {
+            client.publish("c5/carrito/claxon", "Tocaron el claxon");
+        }
+    })
+}
+
+// BOTON AUTOMATICO
+const btnAutomatico = document.getElementById("btn-automatico");
+
+btnAutomatico.addEventListener("click", () => {
+
+    divExtra.innerHTML = "";
+    divModo.innerHTML = "";
+    divModo.innerHTML = `<h2 class="text-center" style="color: #6c757d">MODO AUTOMÁTICO</h2>`;
+
+    if (client.connected) {
+        client.publish("c5/carrito/automatico", "Modo: automatico");
+    }
+})
+
+// BOTON ANTICHOQUES
+const btnAntichoques = document.getElementById("btn-antichoques");
+
+btnAntichoques.addEventListener("click", () => {
+
+    divExtra.innerHTML = "";
+    divModo.innerHTML = "";
+    divModo.innerHTML = `<h2 class="text-center" style="color: #6c757d">MODO ANTICHOQUES</h2>`;
+
+    if (client.connected) {
+        client.publish("c5/carrito/antichoques", "Modo: antichoques");
+    }
+})
+
+// BOTON MANUAL Y JOYSTICK
+let canvas, ctx;
+let cx, cy, vel, ang;
+const btnManual = document.getElementById("btn-manual");
+
+let ultimoEnvio = 0;
+
+btnManual.addEventListener("click", () => {
+
+    divModo.innerHTML = "";
+    divModo.innerHTML = `<h2 class="text-center" style="color: #6c757d">MODO MANUAL</h2>
+                        <p class="text-center" style="color: #6c757d">
+                        X: <span id="coordenada_x"></span>
+                        Y: <span id="coordenada_y"></span>
+                        Velocidad: <span id="velocidad"></span> %
+                        Ángulo: <span id="angulo"></span>
+                        </p>
+                        <canvas id="canvas"></canvas>`;
+    divExtra.innerHTML = `<button type="button" onclick="luces()" class="btn btn-outline-secondary" id="btn-izq">Direccional Izq</button>
+                        <button type="button" onclick="luces()" class="btn btn-outline-secondary" id="btn-prev">Luces Prev</button> 
+                        <button type="button" onclick="luces()" class="btn btn-outline-secondary" id="btn-der">Direccional Der</button>
+                        <button type="button" onclick="luces()" class="btn btn-outline-secondary" id="btn-apagar-luces">Apagar Luces</button> 
+                        <button type="button" onclick="claxon()" class="btn btn-outline-secondary" id="btn-claxon">Claxon</button>`;
+
+    canvas = document.getElementById("canvas");
+    ctx = canvas.getContext("2d");
+    resize(); 
+
+    if (!eventosAgregados) {
+        document.addEventListener("mousedown", comenzarDibujo);
+        document.addEventListener("mouseup", pararDibujo);
+        document.addEventListener("mousemove", dibujar);
+
+        document.addEventListener('touchstart', comenzarDibujo);
+        document.addEventListener('touchend', pararDibujo);
+        document.addEventListener('touchcancel', pararDibujo);
+        document.addEventListener('touchmove', dibujar);
+
+        eventosAgregados = true;
+    }
+    
+    window.addEventListener("resize", resize);
+
+    cx = document.getElementById("coordenada_x");
+    cy = document.getElementById("coordenada_y");
+    vel = document.getElementById("velocidad");
+    ang = document.getElementById("angulo");
+
+    if (cx) cx.innerText = 0;
+    if (cy) cy.innerText = 0;
+    if (vel) vel.innerText = 0;
+    if (ang) ang.innerText = 0;
+})
+
+let ancho, alto, radio, origen_x, origen_y;
+
+function resize() {
+    ancho = window.innerWidth;
+    radio = 35;
+    alto = radio * 5.2;
+    ctx.canvas.width = ancho;
+    ctx.canvas.height = alto;
+    fondo();
+    joystick(ancho / 2, alto / 2);
+}
+
+function fondo() {
+    origen_x = ancho / 2;
+    origen_y = alto / 2;
+
+    ctx.beginPath();
+    ctx.arc(origen_x, origen_y, radio + 20, 0, Math.PI * 2, true);
+    ctx.fillStyle = "#171a1c";
+    ctx.fill();
+}
+
+function joystick(ancho, alto) {
+    ctx.beginPath();
+    ctx.arc(ancho, alto, radio, 0, Math.PI * 2, true);
+    ctx.fillStyle = "#5b6671";
+    ctx.fill();
+    ctx.strokeStyle = "#c6ccd2";
+    ctx.lineWidth = 3;
+    ctx.stroke();
+}
+
+let coordenadas = { x: 0, y: 0 };
+let pintura = false;
+
+function obtenerPosicion(event) {
+    let mouse_x = event.clientX || event.touches[0].clientX;
+    let mouse_y = event.clientY || event.touches[0].clientY;
+    coordenadas.x = mouse_x - canvas.offsetLeft;
+    coordenadas.y = mouse_y - canvas.offsetTop;
+}
+
+function detectorCirculo() {
+    let radio_actual = Math.sqrt(Math.pow(coordenadas.x - origen_x, 2) + Math.pow(coordenadas.y - origen_y, 2));
+    if (radio >= radio_actual) return true
+    else return false
+}
+
+
+function comenzarDibujo(event) {
+    pintura = true;
+    obtenerPosicion(event);
+    if (detectorCirculo()) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fondo();
+        joystick(coordenadas.x, coordenadas.y);
+        dibujar(event);
+    }
+}
+
+
+function pararDibujo() {
+    pintura = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fondo();
+    joystick(ancho / 2, alto / 2);
+    if (cx) cx.innerText = 0;
+    if (cy) cy.innerText = 0;
+    if (vel) vel.innerText = 0;
+    if (ang) ang.innerText = 0;
+
+    if (client.connected) {
+    client.publish("c5/carrito/manual", "Modo: manual | Direcciones: 0,0,0");
+    }
+}
+
+function dibujar(event) {
+
+    if (pintura) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        fondo();
+        let angulo_grados, x, y, velocidad;
+        let angulo = Math.atan2((coordenadas.y - origen_y), (coordenadas.x - origen_x));
+
+        if (Math.sign(angulo) == -1) {
+            angulo_grados = Math.round(-angulo * 180 / Math.PI);
+        }
+        else {
+            angulo_grados = Math.round(360 - angulo * 180 / Math.PI);
+        }
+
+
+        if (detectorCirculo()) {
+            joystick(coordenadas.x, coordenadas.y);
+            x = coordenadas.x;
+            y = coordenadas.y;
+        }
+        else {
+            x = radio * Math.cos(angulo) + origen_x;
+            y = radio * Math.sin(angulo) + origen_y;
+            joystick(x, y);
+        }
+    
+        obtenerPosicion(event);
+
+        velocidad =  Math.round(100 * Math.sqrt(Math.pow(x - origen_x, 2) + Math.pow(y - origen_y, 2)) / radio);
+
+        let relativo_x = Math.round(x - origen_x);
+        let relativo_y = Math.round(y - origen_y);
+        
+        if (cx) cx.innerText = relativo_x;
+        if (cy) cy.innerText = relativo_y;
+        if (vel) vel.innerText = velocidad;
+        if (ang) ang.innerText = angulo_grados;
+
+        let ahora = Date.now();     
+
+        if (ahora - ultimoEnvio > 100) {
+            if (client.connected) {
+                client.publish("c5/carrito/manual", `Modo: manual | Direcciones: ${relativo_x},${relativo_y},${velocidad}`);
+            }
+            ultimoEnvio = ahora;
+        }
+    }
+}
+// BOTON GPS
+const btnGPS = document.getElementById("btn-gps");
+let mapa;
+let marcador;
+
+btnGPS.addEventListener("click", () => {
+
+    divExtra.innerHTML = "";
+    divModo.innerHTML = "";
+    divModo.innerHTML = `<div id="mapa" style="width: 300px; height: 300px; margin-left: 38%"></div>`
+
+    navigator.geolocation.getCurrentPosition((posicion) => {
+
+        let lat = posicion.coords.latitude;
+        let lon = posicion.coords.longitude;
+
+        // mover mapa
+        mapa = L.map("mapa").setView([lat, lon], 18);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapa);
+
+        // marcador
+        marcador = L.marker([lat, lon]).addTo(mapa).bindPopup("Ubicación actual").openPopup();
+
+        if (client.connected) {
+            client.publish("c5/carrito/gps", `${lat}, ${lon}`);
+        }
+
+        mapa.on("click", (e) => {
+            let lat = e.latlng.lat;
+            let lon = e.latlng.lng;
+
+            console.log("LAT:", lat);
+            console.log("LON:", lon);
+
+            // borrar marcador anterior
+            if (marcador) {
+                mapa.removeLayer(marcador);
+            }
+
+            // crear marcador nuevo
+            marcador = L.marker([lat, lon]).addTo(mapa);
+
+            if (client.connected) {
+                client.publish("c5/carrito/gps", `${lat}, ${lon}`);
+            }
+        });
+    });
+})
+</script>
+</html>
