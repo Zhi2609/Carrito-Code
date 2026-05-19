@@ -3,22 +3,17 @@
  
 #include <Arduino.h>
  
-// ============================================================
-//  ANTICHOQUES — Sensor ultrasónico HC-SR04
-// ============================================================
+#define TRIG_PIN 32
+#define ECHO_PIN 34
  
-#define TRIG_PIN 4
-#define ECHO_PIN 5
- 
+// ~ANTICHOQUES~
 class antichoques {
   public:
     void confAntichoques() {
       pinMode(TRIG_PIN, OUTPUT);
       pinMode(ECHO_PIN, INPUT);
       digitalWrite(TRIG_PIN, LOW);
-      Serial.println("✓ Antichoques configurado");
     }
- 
     float lecturaDistancia() {
       digitalWrite(TRIG_PIN, LOW);
       delayMicroseconds(2);

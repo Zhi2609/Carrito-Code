@@ -14,19 +14,19 @@
         </div>
     </header>
     <main>
-        <div class="card text-center bg-dark text-secondary border-secondary my-2 py-2" style="height: 30rem;">
+        <div class="card text-center bg-dark text-secondary border-secondary my-2 py-2" style="height: 25rem;">
             <div class="card-body";>
                 <h5 class="card-title">Modos</h5>
-                <div class="d-grid gap-2 d-md-flex justify-content-md-center m-4">
+                <div class="m-4">
                     <button type="button" class="btn btn-outline-secondary" id="btn-manual">Manual</button>
                     <button type="button" class="btn btn-outline-secondary" id="btn-automatico">Automatico</button>
                     <button type="button" class="btn btn-outline-secondary" id="btn-antichoques">Antichoques</button>
                     <button type="button" class="btn btn-outline-secondary" id="btn-gps">GPS</button>
                 </div>
-                <div id="div-modo"></div>
+                <div id="div-modo" class="text-center"></div>
             </div>
         </div>
-        <div id="div-extra" class="d-grid gap-2 d-md-flex justify-content-md-center"></div>
+        <div id="div-extra" class="text-center"></div>
     </main>
 </body>
 
@@ -49,6 +49,7 @@
 <script>
 const divModo = document.getElementById("div-modo");
 const divExtra = document.getElementById("div-extra");
+
 let eventosAgregados = false;
 
 // LUCES - LEDS
@@ -120,10 +121,10 @@ btnAntichoques.addEventListener("click", () => {
 })
 
 // BOTON MANUAL Y JOYSTICK
-let canvas, ctx;
-let cx, cy, vel, ang;
 const btnManual = document.getElementById("btn-manual");
 
+let canvas, ctx;
+let cx, cy, vel, ang;
 let ultimoEnvio = 0;
 
 btnManual.addEventListener("click", () => {
@@ -182,12 +183,12 @@ function resize() {
     ctx.canvas.width = ancho;
     ctx.canvas.height = alto;
     fondo();
-    joystick(ancho / 2, alto / 2);
+    joystick(ancho / 2.05, alto / 2.05);
 }
 
 function fondo() {
-    origen_x = ancho / 2;
-    origen_y = alto / 2;
+    origen_x = ancho / 2.05;
+    origen_y = alto / 2.05;
 
     ctx.beginPath();
     ctx.arc(origen_x, origen_y, radio + 20, 0, Math.PI * 2, true);
@@ -238,7 +239,7 @@ function pararDibujo() {
     pintura = false;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     fondo();
-    joystick(ancho / 2, alto / 2);
+    joystick(ancho / 2.05, alto / 2.05);
     if (cx) cx.innerText = 0;
     if (cy) cy.innerText = 0;
     if (vel) vel.innerText = 0;
@@ -307,7 +308,9 @@ btnGPS.addEventListener("click", () => {
 
     divExtra.innerHTML = "";
     divModo.innerHTML = "";
-    divModo.innerHTML = `<div id="mapa" style="width: 300px; height: 300px; margin-left: 38%"></div>`
+    divModo.innerHTML = `<div id="mapa" style="width: 250px; height: 250px; margin-left: 38%"></div>`
+    divExtra.innerHTML = `<button type="button" class="btn btn-outline-secondary" id="btn-izq">Iniciar</button>
+                        <button type="button" class="btn btn-outline-secondary" id="btn-prev">Detener</button>`;
 
     navigator.geolocation.getCurrentPosition((posicion) => {
 

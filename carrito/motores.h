@@ -3,113 +3,118 @@
 
 #include <Arduino.h>
 
-// ============================================================
-//  MOTORES
-// ============================================================
-
+// ~MOTORES~
 class motores {
   private:
-    // Pines
-    static const int PIN_A_IN1 = 27;  // Motor izquierdo — avance
-    static const int PIN_A_IN2 = 26;  // Motor izquierdo — retroceso
-    static const int PIN_B_IN1 = 25;  // Motor derecho   — avance
-    static const int PIN_B_IN2 = 33;  // Motor derecho   — retroceso
 
-    // PWM
-    static const int FRECUENCIA   = 5000;
-    static const int RESOLUCION   = 8;
+    static const int IN_A1 = 17; // Motor izquierdo — avance
+    static const int IN_A2 = 16; // Motor izquierdo — retroceso
+    static const int IN_B1 = 18; // Motor derecho   — avance
+    static const int IN_B2 = 19; // Motor derecho   — retroceso
 
-    // Velocidad
+    static const int frecuencia = 2000;
+    static const int resolucion = 8;
+  
     static const int VEL_MAX = 180;
     static const int VEL_MIN = 80;
 
-    // Estado interno para la rampa
     int velActualIzq = 0;
     int velActualDer = 0;
-    static const int PASO_MS = 5;
 
-    // Aplica PWM real a los pines
+    // Aplicar PWM
     void aplicar(int velIzq, int velDer) {
       // Motor izquierdo
       if (velIzq > 0) {
-        int pwm = map(velIzq, 1, VEL_MAX, VEL_MIN, VEL_MAX);
-        ledcWrite(PIN_A_IN1, pwm);
-        ledcWrite(PIN_A_IN2, 0);
+        int PWM = map(velIzq, 1, VEL_MAX, VEL_MIN, VEL_MAX);
+        ledcWrite(IN_A1, PWM);
+        ledcWrite(IN_A2, 0);
       } else if (velIzq < 0) {
-        int pwm = map(abs(velIzq), 1, VEL_MAX, VEL_MIN, VEL_MAX);
-        ledcWrite(PIN_A_IN1, 0);
-        ledcWrite(PIN_A_IN2, pwm);
+        int PWM = map(abs(velIzq), 1, VEL_MAX, VEL_MIN, VEL_MAX);
+        ledcWrite(IN_A1, 0);
+        ledcWrite(IN_A2, PWM);
       } else {
-        ledcWrite(PIN_A_IN1, 0);
-        ledcWrite(PIN_A_IN2, 0);
-      }
-
+        ledcWrite(IN_A1, 0);
+        ledcWrite(IN_A2, 0);
+      };
       // Motor derecho
       if (velDer > 0) {
-        int pwm = map(velDer, 1, VEL_MAX, VEL_MIN, VEL_MAX);
-        ledcWrite(PIN_B_IN1, pwm);
-        ledcWrite(PIN_B_IN2, 0);
+        int PWM = map(velDer, 1, VEL_MAX, VEL_MIN, VEL_MAX);
+        ledcWrite(IN_B1, PWM);
+        ledcWrite(IN_B2, 0);
       } else if (velDer < 0) {
-        int pwm = map(abs(velDer), 1, VEL_MAX, VEL_MIN, VEL_MAX);
-        ledcWrite(PIN_B_IN1, 0);
-        ledcWrite(PIN_B_IN2, pwm);
+        int PWM = map(abs(velDer), 1, VEL_MAX, VEL_MIN, VEL_MAX);
+        ledcWrite(IN_B1, 0);
+        ledcWrite(IN_B2, PWM);
       } else {
-        ledcWrite(PIN_B_IN1, 0);
-        ledcWrite(PIN_B_IN2, 0);
+        ledcWrite(IN_B1, 0);
+        ledcWrite(IN_B2, 0);
       }
     }
 
   public:
-    // Inicializar PWM — llamar desde setup() del .ino
+    // Inicializar PWM
     void confMotores() {
-      ledcAttach(PIN_A_IN1, FRECUENCIA, RESOLUCION);
-      ledcAttach(PIN_A_IN2, FRECUENCIA, RESOLUCION);
-      ledcAttach(PIN_B_IN1, FRECUENCIA, RESOLUCION);
-      ledcAttach(PIN_B_IN2, FRECUENCIA, RESOLUCION);
-      detenerMotores();
-      Serial.println("✓ Motores configurados");
+      ledcAttach(IN_A1, frecuencia, resolucion);
+      ledcAttach(IN_A2, frecuencia, resolucion);
+      ledcAttach(IN_B1, frecuencia, resolucion);
+      ledcAttach(IN_B2, frecuencia, resolucion);
+      mover(0, 0);
     }
-
-    // Rampa de aceleración — bloqueante
-    // NOTA: refactorizar a no-bloqueante antes del Modo 3 completo
+    // Movimiento con rampa NO bloqueante
     void mover(int objetivoIzq, int objetivoDer) {
+
       objetivoIzq = constrain(objetivoIzq, -VEL_MAX, VEL_MAX);
       objetivoDer = constrain(objetivoDer, -VEL_MAX, VEL_MAX);
 
-      while (velActualIzq != objetivoIzq || velActualDer != objetivoDer) {
-        if (velActualIzq < objetivoIzq) velActualIzq++;
-        else if (velActualIzq > objetivoIzq) velActualIzq--;
+      // Detectar cambio brusco de dirección
+      bool cambioIzq =
+        (velActualIzq > 0 && objetivoIzq < 0) ||
+        (velActualIzq < 0 && objetivoIzq > 0);
 
-        if (velActualDer < objetivoDer) velActualDer++;
-        else if (velActualDer > objetivoDer) velActualDer--;
+      bool cambioDer =
+        (velActualDer > 0 && objetivoDer < 0) ||
+        (velActualDer < 0 && objetivoDer > 0);
 
-        aplicar(velActualIzq, velActualDer);
-        delay(PASO_MS);
+      // Frenito antes de invertir giro
+      if (cambioIzq || cambioDer) {
+        aplicar(0, 0);
+
+        velActualIzq = 0;
+        velActualDer = 0;
+
+        return;
       }
-    }
 
-    // Aplicar velocidad directa sin rampa — para control en tiempo real
-    void moverDirecto(int velIzq, int velDer) {
-      velActualIzq = constrain(velIzq, -VEL_MAX, VEL_MAX);
-      velActualDer = constrain(velDer, -VEL_MAX, VEL_MAX);
+      // Rampa izquierda
+      if (velActualIzq < objetivoIzq) {
+        velActualIzq += 5;
+
+        if (velActualIzq > objetivoIzq)
+          velActualIzq = objetivoIzq;
+      }
+      else if (velActualIzq > objetivoIzq) {
+        velActualIzq -= 5;
+
+        if (velActualIzq < objetivoIzq)
+          velActualIzq = objetivoIzq;
+      }
+
+      // Rampa derecha
+      if (velActualDer < objetivoDer) {
+        velActualDer += 5;
+
+        if (velActualDer > objetivoDer)
+          velActualDer = objetivoDer;
+      }
+      else if (velActualDer > objetivoDer) {
+        velActualDer -= 5;
+
+        if (velActualDer < objetivoDer)
+          velActualDer = objetivoDer;
+      }
+
+      // Aplicar PWM
       aplicar(velActualIzq, velActualDer);
-    }
-
-    // Movimientos básicos con rampa
-    void adelante(int v)      { mover(v, v);   }
-    void atras(int v)         { mover(-v, -v); }
-    void izquierda(int v)     { mover(-v, v);  }
-    void derecha(int v)       { mover(v, -v);  }
-    void detenerMotores()     { mover(0, 0);   }
-
-    // Freno activo por cortocircuito (DRV8833: IN1=IN2=HIGH)
-    void frenoActivo() {
-      ledcWrite(PIN_A_IN1, 255);
-      ledcWrite(PIN_A_IN2, 255);
-      ledcWrite(PIN_B_IN1, 255);
-      ledcWrite(PIN_B_IN2, 255);
-      velActualIzq = 0;
-      velActualDer = 0;
     }
 };
 

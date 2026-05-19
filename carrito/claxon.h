@@ -3,18 +3,14 @@
  
 #include <Arduino.h>
  
-// ============================================================
-//  CLAXON — Buzzer pasivo
-// ============================================================
+#define BUZZER_PIN 4
  
-#define BUZZER_PIN 23
- 
+// ~CLAXON~
 class claxon {
   public:
     void confClaxon() {
       pinMode(BUZZER_PIN, OUTPUT);
       digitalWrite(BUZZER_PIN, LOW);
-      Serial.println("✓ Claxon configurado");
     }
  
     void activar() {

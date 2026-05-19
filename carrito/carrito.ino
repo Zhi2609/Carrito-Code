@@ -8,42 +8,34 @@
 #include "claxon.h"
 #include "luces.h"
 
-// ----------- OBJETOS -----------
+// OBJETOS
 carrito carro;
 
-// ----------- CONFIGURACIÓN WiFi -----------
-// cambiar segun tu red wifi
-const char* ssid     = "iss";
-const char* password = "1234567f";
+// CONFIGURACIÓN WiFi
+const char* ssid = "Montse";
+const char* password = "12345xdd";
 
-// ----------- CONFIGURACIÓN MQTT -----------
+// CONFIGURACIÓN MQTT
 const char* mqtt_server = "broker.hivemq.com";
 
-// ----------- CLIENTES -----------
-WiFiClient   espClient;
+// CLIENTES
+WiFiClient espClient;
 PubSubClient client(espClient);
 
-// ----------- VARIABLES -----------
+// VARIABLES
 String modo  = "";
 String extra = "";
 int x = 0, y = 0, v = 0;
 float lat, lon;
 
-// ----------- TIMERS -----------
+// TIMERS
 unsigned long ultimoIntento = 0;
-unsigned long ultimoLoop    = 0;
+unsigned long ultimoLoop = 0;
 
-
-// ============================================================
-//  SETUP
-// ============================================================
+// SETUP
 void setup() {
   Serial.begin(115200);
   delay(500);
-
-  Serial.println("==============================================");
-  Serial.println("  CARRITO INTELIGENTE");
-  Serial.println("==============================================");
 
   // Inicializar hardware
   carro.confCarrito();
@@ -53,17 +45,13 @@ void setup() {
   Serial.print("Conectando a WiFi: ");
   Serial.println(ssid);
 
-  int intentos = 0;
-  while (WiFi.status() != WL_CONNECTED && intentos < 20) {
-    delay(500);
+  while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
-    intentos++;
+    delay(500);
   }
 
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\n WiFi conectado");
-    Serial.print("  IP: ");
-    Serial.println(WiFi.localIP());
   } else {
     Serial.println("\nNo se pudo conectar al WiFi");
   }
@@ -71,15 +59,12 @@ void setup() {
   // Configurar MQTT
   client.setServer(mqtt_server, 1883);
   client.setCallback(callback);
-  client.setKeepAlive(15);
+  client.setKeepAlive(60);
 
   Serial.println("Esperando comandos MQTT...\n");
 }
 
-
-// ============================================================
 //  LOOP
-// ============================================================
 void loop() {
   // Mantener conexión MQTT
   reconnect();
@@ -88,22 +73,24 @@ void loop() {
   // Actualizar timers de claxon y luces
   carro.actualizarClaxon();
   carro.actualizarLuces();
+  // gps.actualizarGPS();
 
-  // --- Procesar extras (luces y claxon) ---
+  // Procesar extras (luces y claxon)
   if (extra == "claxon") {
     carro.activarClaxon();
     extra = "";
   } else if (extra == "lucesIzq") {
-    carro.direccionales("izquierda");
+    carro.luces("izquierda");
     extra = "";
   } else if (extra == "lucesDer") {
-    carro.direccionales("derecha");
+    carro.luces("derecha");
     extra = "";
   } else if (extra == "lucesPrev") {
-    carro.preventivas();
+    carro.luces("preventivas");
     extra = "";
-  } else if (extra == "") {
+  } else if (extra == "lucesApagar") {
     carro.apagarLuces();
+    extra = "";
   }
 
   if (millis() - ultimoLoop >= 50) {
@@ -115,16 +102,13 @@ void loop() {
       carro.antichoques();
     } else if (modo == "manual") {
       carro.manual(x, y, v);
-    } else if (modo == "gps") {
-      carro.gps();
-    }
+    }// } else if (modo == "gps") {
+    //   carro.gps();
+    // }
   }
 }
 
-
-// ============================================================
-//  RECONEXIÓN MQTT — Sin bloquear el loop
-// ============================================================
+// RECONEXIÓN MQTT
 void reconnect() {
   if (client.connected()) return;
   if (millis() - ultimoIntento < 3000) return;
@@ -141,13 +125,11 @@ void reconnect() {
     Serial.println(" — reintentando en 3s");
   }
 }
-
-
-// ============================================================
 //  CALLBACK MQTT
-// ============================================================
 void callback(char* topic, byte* payload, unsigned int length) {
+
   String mensaje = "";
+
   for (unsigned int i = 0; i < length; i++) {
     mensaje += (char)payload[i];
   }
@@ -159,7 +141,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("] ");
   Serial.println(mensaje);
 
-  // --- Modos ---
+  // Modos
   if (t == "c5/carrito/automatico") {
     modo = "automatico";
     Serial.println("→ Modo: AUTOMÁTICO");
@@ -170,12 +152,13 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   else if (t == "c5/carrito/manual") {
     modo = "manual";
-    // Parsear correctamente "Modo: manual | Direcciones: x,y,v"
+  
     int idx = mensaje.indexOf("Direcciones: ");
     if (idx != -1) {
       String coords = mensaje.substring(idx + 13);
       sscanf(coords.c_str(), "%d,%d,%d", &x, &y, &v);
     }
+
     Serial.print("→ Modo: MANUAL  x=");
     Serial.print(x);
     Serial.print(" y=");
@@ -183,17 +166,17 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.print(" v=");
     Serial.println(v);
   }
-  else if (t == "c5/carrito/gps") {
-    modo = "gps";
+  // else if (t == "c5/carrito/gps") {
+  //   modo = "gps";
 
-    sscanf(mensaje.c_str(), "%f,%f", &lat, &lon);
+  //   sscanf(mensaje.c_str(), "%f,%f", &lat, &lon);
 
-    Serial.println("→ Modo: GPS | ");
-    Serial.print(" altitude=");
-    Serial.print(lat);
-    Serial.print(" longitude=");
-    Serial.println(lon);
-  }
+  //   Serial.println("→ Modo: GPS | ");
+  //   Serial.print(" altitude=");
+  //   Serial.print(lat);
+  //   Serial.print(" longitude=");
+  //   Serial.println(lon);
+  // }
 
   // --- Extras ---
   else if (t == "c5/carrito/claxon") {
@@ -213,8 +196,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println("→ Extra: LUCES PREV");
   }
   else if (t == "c5/carrito/lucesApagar") {
-    extra = "";
-    carro.apagarLuces();
+    extra = "lucesApagar";
     Serial.println("→ Extra: LUCES APAGADAS");
   }
 }
